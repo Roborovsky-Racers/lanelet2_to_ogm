@@ -1,0 +1,11 @@
+services:
+  lanelet2_to_ogm:
+    container_name: lanelet2_to_ogm
+    build: ./app
+    environment:
+      - TZ=Asia/Tokyo
+    volumes:
+      - ./app:/app
+    tty: true
+    command: python /app/src/lanelet2_to_ogm.py
+#

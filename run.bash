@@ -6,12 +6,11 @@ cd ${SCRIPT_DIR}
 if [ ! -d ".venv" ]; then
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install pyyaml
-  pip install lanelet2
-  pip install numpy
-  pip install opencv-python
+  python3 -m virtualenv -p python3.8 .virtualenv
+  source .virtualenv/bin/activate
+  pip install -r requirements.txt
 else
-  source .venv/bin/activate
+  source .virtualenv/bin/activate
 fi
 
 python3 lanelet2_to_ogm.py

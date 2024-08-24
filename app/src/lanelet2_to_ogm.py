@@ -1,10 +1,11 @@
+from os import path
 import yaml
 from lanelet2.io import Origin
 from lanelet2.projection import UtmProjector
 from lanelet2.io import load
 
 # マップファイルのパスを指定
-map_file = '/aichallenge/workspace/src/aichallenge_submit/aichallenge_submit_launch/map/lanelet2_map.osm'
+map_file = '/app/map/lanelet2_map.osm'
 
 # 原点とプロジェクションを設定
 origin = Origin(35.22312494056, 138.8024583466)  # 緯度と経度
@@ -29,7 +30,6 @@ occupancy_grid = np.zeros((int(map_height / resolution), int(map_width / resolut
 # Lanelet2のレーンレットを取得
 lanelets = lanelet_map.laneletLayer
 
-
 # マップ全体の範囲を取得
 min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
 for lanelet in lanelets:
@@ -42,21 +42,10 @@ for lanelet in lanelets:
 # グリッドマップのサイズをマップ範囲に合わせて調整
 grid_width = int((max_x - min_x) / resolution)
 grid_height = int((max_y - min_y) / resolution)
-occupancy_grid = np.zeros((grid_height, grid_width), dtype=np.uint8)
 occupancy_grid_flip = np.zeros((grid_height, grid_width), dtype=np.uint8)
 
 # レーンレットをグリッドマップに変換
-for lanelet in lanelets:
-    polygon = lanelet.polygon2d()
-    pts = []
-    for pt in polygon:
-        x_pixel = int((pt.x - min_x) / resolution)
-        y_pixel = int((pt.y - min_y) / resolution)
-        pts.append([x_pixel, y_pixel])
-    pts = np.array([pts], dtype=np.int32)
-    cv2.fillPoly(occupancy_grid, pts, 255)
-
-# レーンレットをグリッドマップに変換(Y座標を反転)
+# (pgmでは上方向を+Yとしたいので、Y座標を反転させている)
 for lanelet in lanelet_map.laneletLayer:
     polygon = lanelet.polygon2d()
     pts = []
@@ -68,12 +57,13 @@ for lanelet in lanelet_map.laneletLayer:
     cv2.fillPoly(occupancy_grid_flip, pts, 255)
 
 # PGMファイルとして保存
+map_dir = path.dirname(map_file)
 map_filename = 'occupancy_grid_map'
 pgm_filename = map_filename + ".pgm"
 
 # pgm では Y軸反転した向きで使用する
-cv2.imwrite(pgm_filename, occupancy_grid_flip)
-cv2.imwrite(map_filename + ".png", occupancy_grid)
+pgm_filepath = path.join(map_dir, pgm_filename)
+cv2.imwrite(pgm_filepath, occupancy_grid_flip)
 
 # YAMLファイルの内容を生成
 yaml_data = {
@@ -87,8 +77,9 @@ yaml_data = {
 
 # YAMLファイルとして保存
 yaml_filename = map_filename + ".yaml"
-with open(yaml_filename, 'w') as yaml_file:
+yaml_filepath = path.join(map_dir, yaml_filename)
+with open(yaml_filepath, 'w') as yaml_file:
     yaml.dump(yaml_data, yaml_file, default_flow_style=False)
 
-print(f"PGM file saved to {pgm_filename}")
-print(f"YAML file saved to {yaml_filename}")
+print(f"PGM file saved to {pgm_filepath}")
+print(f"YAML file saved to {yaml_filepath}")
